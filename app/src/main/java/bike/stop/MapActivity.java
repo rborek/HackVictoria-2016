@@ -7,7 +7,6 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -20,6 +19,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.SphericalUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,6 +32,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private LocationManager locationManager;
+    private static double nextTo = 10;
 
     private void initBikeRackMarkers() {
         List<BikeRack> bikeRacks = getBikeRacks();
@@ -101,8 +102,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
     }
 
+
     public ArrayList<BikeRack> getBikeRacks() {
         ArrayList<BikeRack> bikeRacks = new ArrayList<>();
+        ArrayList<LatLng> closeBikeRacks = new ArrayList<>();
+        LatLng rack1;
+        LatLng rack2;
+        double averageLatitude = 0;
+        double averageLongitutde = 0;
+        LatLng averageRack;
+        double distance;
         try {
             InputStream stream = getResources().openRawResource(R.raw.bikeracks);
             BufferedReader in = new BufferedReader(new InputStreamReader(stream));
@@ -111,6 +120,28 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             while ((line = in.readLine()) != null) {
                 String[] ar = line.split(",");
                 bikeRacks.add(new BikeRack(Double.parseDouble(ar[3]), Double.parseDouble(ar[4])));
+                if (bikeRacks.size() >= 2) {
+                    rack1 = new LatLng(bikeRacks.get(bikeRacks.size() - 1).latitude, bikeRacks.get(bikeRacks.size() - 1).longitude); // the last one
+                    rack2 = new LatLng(bikeRacks.get(bikeRacks.size() - 2).latitude, bikeRacks.get(bikeRacks.size() - 2).longitude); // the second last one
+                    distance = SphericalUtil.computeDistanceBetween(rack1, rack2);
+                    if (distance < nextTo) {
+                        closeBikeRacks.add(rack1);
+                    } else {
+                        if (!closeBikeRacks.isEmpty()) {
+                            closeBikeRacks.add(rack1); // add the last element
+                            for (LatLng rack : closeBikeRacks) { // get the average value
+                                averageLatitude += rack.latitude;
+                                averageLongitutde += rack.longitude;
+                            }
+                            averageRack = new LatLng(averageLatitude/closeBikeRacks.size(), averageLongitutde / closeBikeRacks.size());
+                            for(int k = 0; k < closeBikeRacks.size(); k++){
+                                bikeRacks.remove(bikeRacks.size()-1);
+                            }
+                            bikeRacks.add(new BikeRack(averageLongitutde, averageLatitude, closeBikeRacks.size())); // add the average value of all the close by bikeRacks and the number of them
+                            closeBikeRacks.clear(); // clear closebyRack
+                        }
+                    }
+                }
             }
             in.close();
         } catch (IOException e) {
@@ -118,6 +149,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
         return bikeRacks;
     }
+
 
     @Override
     public void onLocationChanged(Location location) {

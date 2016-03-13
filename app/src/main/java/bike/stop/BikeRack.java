@@ -13,9 +13,20 @@ import java.util.ArrayList;
 public class BikeRack {
     public final double longitude;
     public final double latitude;
+    public int number;
 
     public BikeRack(double longitude, double latitude ){
         this.longitude = longitude;
         this.latitude = latitude;
+        number =1;
+    }
+    public BikeRack(double longitude, double latitude, int number ){
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.number = number;
+    }
+
+    public void setNumber(int number){
+        this.number = number;
     }
 }
