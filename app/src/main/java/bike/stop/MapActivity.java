@@ -1,26 +1,32 @@
 package bike.stop;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
 
@@ -28,7 +34,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationManager locationManager;
 
     private void initBikeRackMarkers() {
-        
+        List<BikeRack> bikeRacks = getBikeRacks();
+        Drawable image;
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            image = getResources().getDrawable(R.drawable.bike, getTheme());
+//        } else {
+//            image = getResources().getDrawable(R.drawable.bike);
+//        }
+        for (BikeRack rack : bikeRacks) {
+            mMap.addMarker(new MarkerOptions().position(new LatLng(rack.latitude, rack.longitude)).icon(BitmapDescriptorFactory.fromResource(R.drawable.bike)));
+        }
     }
 
     @Override
@@ -72,18 +87,36 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         Criteria criteria = new Criteria();
-
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-
         // Getting the name of the best provider
         String provider = locationManager.getBestProvider(criteria, true);
         // Getting Current Location
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-           ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, this);
+        initBikeRackMarkers();
+        LatLng latLng = new LatLng(locationManager.getLastKnownLocation(provider).getLatitude(), locationManager.getLastKnownLocation(provider).getLongitude());
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
+    }
+
+    public ArrayList<BikeRack> getBikeRacks() {
+        ArrayList<BikeRack> bikeRacks = new ArrayList<>();
+        try {
+            InputStream stream = getResources().openRawResource(R.raw.bikeracks);
+            BufferedReader in = new BufferedReader(new InputStreamReader(stream));
+            String line;
+            line = in.readLine();
+            while ((line = in.readLine()) != null) {
+                String[] ar = line.split(",");
+                bikeRacks.add(new BikeRack(Double.parseDouble(ar[3]), Double.parseDouble(ar[4])));
+            }
+            in.close();
+        } catch (IOException e) {
+            System.out.println("File Read Error");
+        }
+        return bikeRacks;
     }
 
     @Override
@@ -91,7 +124,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
         LatLng latLng = new LatLng(latitude, longitude);
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
+//        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
     }
 
     @Override
