@@ -47,7 +47,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         bikeRacks = getBikeRacks();
         for (BikeRack rack : bikeRacks) {
             double curDist = SphericalUtil.computeDistanceBetween(myCoords, new LatLng(rack.latitude, rack.longitude));
-            if (closestDists.size() < 15) {
+            if (closestDists.size() < 10) {
                 closestRacks.add(rack);
                 closestDists.add(curDist);
             } else {
@@ -164,7 +164,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             averageLatitude += rack1.latitude;
                             averageLongitude += rack1.longitude;
                         }
-                        if (closeBikeRacks.size() != 1) System.out.println("It's not 1");
                         averageRack = new BikeRack(averageLatitude / closeBikeRacks.size(), averageLongitude / closeBikeRacks.size(), closeBikeRacks.size());
                         bikeRacks.add(averageRack); // add the average value of all the close by bikeRacks and the number of them
                         averageLatitude = 0;
