@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -21,6 +20,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -39,18 +39,41 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private List<BikeRack> bikeRacks;
     private LatLng myCoords;
     private LocationManager locationManager;
-    private static double nextTo = 1;
+    private static double nextTo = 100;
 
     private void initBikeRackMarkers() {
+        ArrayList<Double> closestDists = new ArrayList<>();
+        ArrayList<BikeRack> closestRacks = new ArrayList<>();
         bikeRacks = getBikeRacks();
-        Drawable image;
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            image = getResources().getDrawable(R.drawable.bike, getTheme());
-//        } else {
-//            image = getResources().getDrawable(R.drawable.bike);
-//        }
         for (BikeRack rack : bikeRacks) {
-            mMap.addMarker(new MarkerOptions().position(new LatLng(rack.latitude, rack.longitude)).icon(BitmapDescriptorFactory.fromResource(R.drawable.bike)));
+            double curDist = SphericalUtil.computeDistanceBetween(myCoords, new LatLng(rack.latitude, rack.longitude));
+            if (closestDists.size() < 15) {
+                closestRacks.add(rack);
+                closestDists.add(curDist);
+            } else {
+                for (int i = 0; i < closestDists.size(); i++) {
+                    if (curDist < closestDists.get(i)) {
+                        closestDists.remove(i);
+                        closestRacks.remove(i);
+                        closestDists.add(curDist);
+                        closestRacks.add(rack);
+                        break;
+                    }
+                }
+            }
+        }
+        for (BikeRack rack : closestRacks) {
+            int resource = 0;
+            if (rack.number == 1) {
+                resource = R.drawable.bike_1;
+            } else if (rack.number == 2) {
+                resource = R.drawable.bike_2;
+            } else {
+                resource = R.drawable.bike_3;
+            }
+
+            BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(resource);
+            mMap.addMarker(new MarkerOptions().position(new LatLng(rack.latitude, rack.longitude)).icon(icon));
         }
     }
 
@@ -89,7 +112,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        initBikeRackMarkers();
         enableMyLocation();
         // Add a marker in Sydney
         Criteria criteria = new Criteria();
@@ -105,12 +127,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         LatLng latLng = new LatLng(locationManager.getLastKnownLocation(provider).getLatitude(), locationManager.getLastKnownLocation(provider).getLongitude());
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
         myCoords = latLng;
+        initBikeRackMarkers();
         Button button = new Button(this);
         button.setText("Find nearest bike rack");
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
         addContentView(button, params);
-        button.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.ADD);
+        button.getBackground().setColorFilter(Color.argb(255, 220, 0, 0), PorterDuff.Mode.ADD);
         button.setOnClickListener(new LocateNearestBikeRackButton(mMap, bikeRacks, this));
     }
 
@@ -141,11 +164,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             averageLatitude += rack1.latitude;
                             averageLongitude += rack1.longitude;
                         }
+                        if (closeBikeRacks.size() != 1) System.out.println("It's not 1");
                         averageRack = new BikeRack(averageLatitude / closeBikeRacks.size(), averageLongitude / closeBikeRacks.size(), closeBikeRacks.size());
                         bikeRacks.add(averageRack); // add the average value of all the close by bikeRacks and the number of them
                         averageLatitude = 0;
                         averageLongitude = 0;
                         closeBikeRacks.clear(); // clear closebyRack
+                        closeBikeRacks.add(rack);
+                    } else {
                         closeBikeRacks.add(rack);
                     }
                 }
