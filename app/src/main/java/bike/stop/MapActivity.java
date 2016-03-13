@@ -2,6 +2,8 @@ package bike.stop;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Criteria;
 import android.location.Location;
@@ -13,6 +15,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -104,8 +107,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         myCoords = latLng;
         Button button = new Button(this);
         button.setText("Find nearest bike rack");
-        addContentView(button, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        button.getBackground().setAlpha(1000);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        addContentView(button, params);
+        button.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.ADD);
         button.setOnClickListener(new LocateNearestBikeRackButton(mMap, bikeRacks, this));
     }
 
