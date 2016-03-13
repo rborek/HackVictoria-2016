@@ -7,11 +7,12 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -31,10 +32,12 @@ import java.util.List;
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
 
     private GoogleMap mMap;
+    List<BikeRack> bikeRacks;
+    LatLng myCoords;
     private LocationManager locationManager;
 
     private void initBikeRackMarkers() {
-        List<BikeRack> bikeRacks = getBikeRacks();
+        bikeRacks = getBikeRacks();
         Drawable image;
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 //            image = getResources().getDrawable(R.drawable.bike, getTheme());
@@ -81,11 +84,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        CameraUpdateFactory.zoomTo(1);
         enableMyLocation();
         // Add a marker in Sydney
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         Criteria criteria = new Criteria();
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         // Getting the name of the best provider
@@ -99,6 +99,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         initBikeRackMarkers();
         LatLng latLng = new LatLng(locationManager.getLastKnownLocation(provider).getLatitude(), locationManager.getLastKnownLocation(provider).getLongitude());
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
+        Button button = new Button(this);
+        button.setText("Find nearest bike rack");
+        addContentView(button, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        button.getBackground().setAlpha(1000);
+        button.setOnClickListener(new LocateNearestBikeRackButton(mMap, bikeRacks, this));
     }
 
     public ArrayList<BikeRack> getBikeRacks() {
@@ -119,12 +124,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return bikeRacks;
     }
 
+    public LatLng getMyCoords() {
+        return myCoords;
+    }
+
+
     @Override
     public void onLocationChanged(Location location) {
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-        LatLng latLng = new LatLng(latitude, longitude);
-//        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17));
+        myCoords = new LatLng(location.getLatitude(), location.getLongitude());
     }
 
     @Override
