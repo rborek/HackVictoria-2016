@@ -118,8 +118,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     public ArrayList<BikeRack> getBikeRacks() {
         ArrayList<BikeRack> bikeRacks = new ArrayList<>();
         ArrayList<LatLng> closeBikeRacks = new ArrayList<>();
-        LatLng rack1;
-        LatLng rack2;
+        BikeRack bikeRack;
+        LatLng rack;
         double averageLatitude = 0;
         double averageLongitude = 0;
         BikeRack averageRack;
@@ -131,33 +131,33 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             line = in.readLine();
             while ((line = in.readLine()) != null) {
                 String[] ar = line.split(",");
-                bikeRacks.add(new BikeRack(Double.parseDouble(ar[4]), Double.parseDouble(ar[3])));
-                if (bikeRacks.size() >= 2) {
-                    rack1 = new LatLng(bikeRacks.get(bikeRacks.size() - 1).latitude, bikeRacks.get(bikeRacks.size() - 1).longitude); // the last one
-                    rack2 = new LatLng(bikeRacks.get(bikeRacks.size() - 2).latitude, bikeRacks.get(bikeRacks.size() - 2).longitude); // the second last one
-                    distance = SphericalUtil.computeDistanceBetween(rack1, rack2);
-                    if (distance < nextTo) {
-                        closeBikeRacks.add(rack1);
-                    } else {
-                        if (!closeBikeRacks.isEmpty()) {
-                            closeBikeRacks.add(rack1); // add the last element
-                            for (LatLng rack : closeBikeRacks) { // get the average value
-                                averageLatitude += rack.latitude;
-                                averageLongitude += rack.longitude;
-                            }
-                            averageRack = new BikeRack(averageLatitude/closeBikeRacks.size(), averageLongitude / closeBikeRacks.size(), closeBikeRacks.size());
-                            for(int k = 0; k < closeBikeRacks.size(); k++){
-                                bikeRacks.remove(bikeRacks.size()-1);
-                            }
-                            bikeRacks.add(averageRack); // add the average value of all the close by bikeRacks and the number of them
-                            averageLatitude = 0;
-                            averageLongitude = 0;
-                            closeBikeRacks.clear(); // clear closebyRack
+                rack = new LatLng(Double.parseDouble(ar[4]), Double.parseDouble(ar[3]));
+                if (closeBikeRacks.isEmpty()) {
+                    closeBikeRacks.add(rack);
+                } else {
+                    distance = SphericalUtil.computeDistanceBetween(closeBikeRacks.get(closeBikeRacks.size() - 1), rack);
+                    if (distance > nextTo) { // if they are not close by
+                        for (LatLng rack1 : closeBikeRacks) { // get the average value
+                            averageLatitude += rack1.latitude;
+                            averageLongitude += rack1.longitude;
                         }
+                        averageRack = new BikeRack(averageLatitude / closeBikeRacks.size(), averageLongitude / closeBikeRacks.size(), closeBikeRacks.size());
+                        bikeRacks.add(averageRack); // add the average value of all the close by bikeRacks and the number of them
+                        averageLatitude = 0;
+                        averageLongitude = 0;
+                        closeBikeRacks.clear(); // clear closebyRack
+                        closeBikeRacks.add(rack);
                     }
                 }
             }
+            for (LatLng rack1 : closeBikeRacks) { // get the average value
+                averageLatitude += rack1.latitude;
+                averageLongitude += rack1.longitude;
+            }
+            averageRack = new BikeRack(averageLatitude / closeBikeRacks.size(), averageLongitude / closeBikeRacks.size(), closeBikeRacks.size());
+            bikeRacks.add(averageRack); // add the average value of all the close by bikeRacks and the number of them
             in.close();
+
         } catch (IOException e) {
             System.out.println("File Read Error");
         }
